@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MenuBar } from './components/MenuBar';
 import { StatusBar } from './components/StatusBar';
 import { Editor } from './components/Editor';
@@ -9,12 +9,16 @@ import { BootGate } from './components/BootGate';
 import { ShutdownScreen } from './components/ShutdownScreen';
 import { useJournal } from './hooks/useJournal';
 import { useKeyboardSound } from './hooks/useKeyboardSound';
+import { resolveIdentity } from './lib/identity';
 
 type AppMode = 'edit' | 'browse' | 'help';
 type DialogType = 'none' | 'help' | 'browse' | 'unsaved-new' | 'unsaved-browse' | 'unsaved-quit' | 'quit' | 'reset';
 type Phase = 'boot-gate' | 'splash' | 'editor' | 'shutdown' | 'safe-to-turn-off';
 
 function App() {
+  // Resolve the journal owner from the URL (?u=lastname_firstname) once at load.
+  const identity = useMemo(() => resolveIdentity(window.location.search), []);
+
   const {
     entries,
     currentEntry,
@@ -28,7 +32,7 @@ function App() {
     loadEntry,
     deleteEntry,
     clearAllEntries,
-  } = useJournal();
+  } = useJournal(identity.storageKey);
 
   const { playBeep, playTheme, playKeyClick } = useKeyboardSound();
 
@@ -298,6 +302,7 @@ function App() {
         onChange={updateContent}
         onCursorChange={setCursorPosition}
         disabled={!currentEntry}
+        ownerName={identity.name}
       />
 
       {/* Status Bar */}

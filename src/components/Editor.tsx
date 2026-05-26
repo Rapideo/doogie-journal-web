@@ -7,6 +7,7 @@ interface EditorProps {
   onChange: (content: string) => void;
   onCursorChange: (position: { line: number; column: number }) => void;
   disabled?: boolean;
+  ownerName: string;
 }
 
 // Format date like "January 31, 1991..."
@@ -23,7 +24,7 @@ function formatJournalDate(dateStr: string | null): string {
 
 const TYPING_SPEED_MS = 80; // milliseconds per character
 
-export function Editor({ content, date, onChange, onCursorChange, disabled }: EditorProps) {
+export function Editor({ content, date, onChange, onCursorChange, disabled, ownerName }: EditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { playKeyClick, playEnterKey } = useKeyboardSound();
   const [typedDateLength, setTypedDateLength] = useState<number | null>(null);
@@ -122,7 +123,7 @@ export function Editor({ content, date, onChange, onCursorChange, disabled }: Ed
           <div className="journal-header-container">
             <div className="journal-header">
               <div className="journal-header-line"></div>
-              <span className="journal-header-text">PERSONAL JOURNAL OF MATTHEW DAVID SMITH</span>
+              <span className="journal-header-text">PERSONAL JOURNAL OF {ownerName}</span>
               <div className="journal-header-line"></div>
             </div>
           </div>

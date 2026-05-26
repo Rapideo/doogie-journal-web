@@ -10,20 +10,19 @@ export interface JournalEntry {
   updatedAt: string;
 }
 
-const STORAGE_KEY = 'doogie-journal-entries';
 const ERROR_VISIBLE_MS = 4000;
 
-function isFirstVisit(): boolean {
+function isFirstVisit(storageKey: string): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) === null;
+    return localStorage.getItem(storageKey) === null;
   } catch {
     return false;
   }
 }
 
-function readEntries(): JournalEntry[] {
+function readEntries(storageKey: string): JournalEntry[] {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const data = localStorage.getItem(storageKey);
     if (data) {
       return JSON.parse(data).entries || [];
     }
@@ -33,15 +32,9 @@ function readEntries(): JournalEntry[] {
   return [];
 }
 
-function seedSampleEntry(): JournalEntry[] {
-  const seeded = [sampleEntry];
-  writeEntries(seeded);
-  return seeded;
-}
-
-function writeEntries(entries: JournalEntry[]): boolean {
+function writeEntries(storageKey: string, entries: JournalEntry[]): boolean {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ entries }));
+    localStorage.setItem(storageKey, JSON.stringify({ entries }));
     return true;
   } catch (e) {
     console.error('Error saving to localStorage:', e);
@@ -49,7 +42,13 @@ function writeEntries(entries: JournalEntry[]): boolean {
   }
 }
 
-export function useJournal() {
+function seedSampleEntry(storageKey: string): JournalEntry[] {
+  const seeded = [sampleEntry];
+  writeEntries(storageKey, seeded);
+  return seeded;
+}
+
+export function useJournal(storageKey: string) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState<JournalEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,13 +57,13 @@ export function useJournal() {
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isFirstVisit()) {
-      setEntries(seedSampleEntry());
+    if (isFirstVisit(storageKey)) {
+      setEntries(seedSampleEntry(storageKey));
     } else {
-      setEntries(readEntries());
+      setEntries(readEntries(storageKey));
     }
     setIsLoading(false);
-  }, []);
+  }, [storageKey]);
 
   // Auto-clear the storage warning after a short interval.
   useEffect(() => {
@@ -116,7 +115,7 @@ export function useJournal() {
         newEntries = [currentEntry, ...entries];
       }
       newEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      const ok = writeEntries(newEntries);
+      const ok = writeEntries(storageKey, newEntries);
       // Even if the write fails, keep the entry in component state so the
       // user does not lose work for the current session.
       setEntries(newEntries);
@@ -134,7 +133,7 @@ export function useJournal() {
       setIsSaving(false);
       return false;
     }
-  }, [currentEntry, entries, flagStorageFull]);
+  }, [currentEntry, entries, flagStorageFull, storageKey]);
 
   const loadEntry = useCallback((entry: JournalEntry) => {
     setCurrentEntry(entry);
@@ -144,7 +143,7 @@ export function useJournal() {
   const deleteEntry = useCallback(async (entryId: string) => {
     try {
       const newEntries = entries.filter(e => e.id !== entryId);
-      const ok = writeEntries(newEntries);
+      const ok = writeEntries(storageKey, newEntries);
       setEntries(newEntries);
       if (!ok) {
         flagStorageFull();
@@ -159,11 +158,11 @@ export function useJournal() {
       flagStorageFull();
       return false;
     }
-  }, [currentEntry, entries, flagStorageFull]);
+  }, [currentEntry, entries, flagStorageFull, storageKey]);
 
   const clearAllEntries = useCallback(async () => {
     try {
-      const seeded = seedSampleEntry();
+      const seeded = seedSampleEntry(storageKey);
       setEntries(seeded);
       setCurrentEntry(null);
       setHasUnsavedChanges(false);
@@ -172,7 +171,7 @@ export function useJournal() {
       console.error('Error clearing entries:', e);
       return false;
     }
-  }, []);
+  }, [storageKey]);
 
   return {
     entries,
