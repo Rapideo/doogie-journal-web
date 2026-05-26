@@ -6,12 +6,13 @@ import { EntryBrowser } from './components/EntryBrowser';
 import { HelpDialog } from './components/HelpDialog';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { BootGate } from './components/BootGate';
+import { ShutdownScreen } from './components/ShutdownScreen';
 import { useJournal } from './hooks/useJournal';
 import { useKeyboardSound } from './hooks/useKeyboardSound';
 
 type AppMode = 'edit' | 'browse' | 'help';
 type DialogType = 'none' | 'help' | 'browse' | 'unsaved-new' | 'unsaved-browse' | 'unsaved-quit' | 'quit' | 'reset';
-type Phase = 'boot-gate' | 'splash' | 'editor';
+type Phase = 'boot-gate' | 'splash' | 'editor' | 'shutdown' | 'safe-to-turn-off';
 
 function App() {
   const {
@@ -29,7 +30,7 @@ function App() {
     clearAllEntries,
   } = useJournal();
 
-  const { playBeep, playTheme } = useKeyboardSound();
+  const { playBeep, playTheme, playKeyClick } = useKeyboardSound();
 
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [activeDialog, setActiveDialog] = useState<DialogType>('none');
@@ -175,9 +176,17 @@ function App() {
     await deleteEntry(entryId);
   }, [deleteEntry]);
 
-  const handleConfirmQuit = useCallback(() => {
-    // Replaced in Task 7 with shutdown phase transition.
+  const handleConfirmQuit = useCallback(async () => {
     setActiveDialog('none');
+    // Auto-save any pending entry before shutting down.
+    if (hasUnsavedChanges) {
+      await saveCurrentEntry();
+    }
+    setPhase('shutdown');
+  }, [hasUnsavedChanges, saveCurrentEntry]);
+
+  const handleShutdownComplete = useCallback(() => {
+    setPhase('safe-to-turn-off');
   }, []);
 
   // Global keyboard shortcuts
@@ -244,6 +253,25 @@ function App() {
         </div>
         <div className="text-cyan-300 crt-glow text-sm">
           v1.0 &mdash; loading today's entry...
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'shutdown') {
+    return (
+      <ShutdownScreen
+        onComplete={handleShutdownComplete}
+        onTick={playKeyClick}
+      />
+    );
+  }
+
+  if (phase === 'safe-to-turn-off') {
+    return (
+      <div className="h-screen bg-black text-orange-400 flex items-center justify-center font-mono">
+        <div className="text-xl">
+          It is now safe to turn off your computer.
         </div>
       </div>
     );
