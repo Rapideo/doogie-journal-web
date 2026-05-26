@@ -15,6 +15,7 @@ Boot up, hear the theme music, write the day's entry — just like Doogie did.
 - Entry browser, auto-save detection, unsaved-changes warnings
 - F10 → DOS-style shutdown animation → "safe to turn off" screen
 - Shift+F3 → reset entries (re-seeds the sample journal entry)
+- Per-person journals via URL — `?u=lastname_firstname` sets the owner (banner name + isolated storage); no slug → Doogie Howser
 - Local-only storage — entries live in your browser, nothing is sent to a server
 
 ## Tech Stack
@@ -55,7 +56,8 @@ Configured for Netlify. Push to a connected GitHub branch and Netlify builds aut
 
 ## How it works
 
-- **Storage:** Entries are kept in `localStorage` under the key `doogie-journal-entries`. Each browser keeps its own journal. Clearing browser data erases everything.
+- **Journal owner:** The `?u=<lastname>_<firstname>` query parameter sets whose journal it is — e.g. `?u=dewell_ryan` shows "PERSONAL JOURNAL OF RYAN DEWELL". With no parameter, the owner defaults to Doogie Howser.
+- **Storage:** Entries are kept in `localStorage`, namespaced per owner under `doogie-journal-entries:<owner>` (e.g. `doogie-journal-entries:dewell_ryan`). Each owner — and each browser — keeps its own journal. Clearing browser data erases everything.
 - **Boot gate:** Browsers block audio autoplay until the user interacts with the page. The boot screen exists to capture that first user gesture, which unlocks the splash theme music.
 - **Sample seed:** On first visit (when the storage key has never been set), one sample entry is pre-loaded so the entry browser has something to show.
 - **Shutdown:** Browsers can't actually close their own tab, so F10 plays the DOS shutdown animation and lands on a static "safe to turn off" screen. Refreshing the page reboots the journal.
