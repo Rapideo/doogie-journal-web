@@ -4,7 +4,7 @@
 
 Boot up, hear the theme music, write the day's entry — just like Doogie did.
 
-**Live demo:** _(deploy first to fill in)_
+**Live demo:** https://doogie-journal-web.netlify.app
 
 ## Features
 
