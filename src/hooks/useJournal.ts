@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { sampleEntry } from '../data/sampleEntry';
 
 export interface JournalEntry {
   id: string;
@@ -12,6 +13,14 @@ export interface JournalEntry {
 const STORAGE_KEY = 'doogie-journal-entries';
 const ERROR_VISIBLE_MS = 4000;
 
+function isFirstVisit(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === null;
+  } catch {
+    return false;
+  }
+}
+
 function readEntries(): JournalEntry[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -22,6 +31,12 @@ function readEntries(): JournalEntry[] {
     console.error('Error reading from localStorage:', e);
   }
   return [];
+}
+
+function seedSampleEntry(): JournalEntry[] {
+  const seeded = [sampleEntry];
+  writeEntries(seeded);
+  return seeded;
 }
 
 function writeEntries(entries: JournalEntry[]): boolean {
@@ -43,7 +58,11 @@ export function useJournal() {
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
 
   useEffect(() => {
-    setEntries(readEntries());
+    if (isFirstVisit()) {
+      setEntries(seedSampleEntry());
+    } else {
+      setEntries(readEntries());
+    }
     setIsLoading(false);
   }, []);
 
