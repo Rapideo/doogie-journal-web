@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-interface JournalEntry {
+export interface JournalEntry {
   id: string;
   date: string;
   content: string;
@@ -9,12 +9,12 @@ interface JournalEntry {
   updatedAt: string;
 }
 
-// Fallback storage for browser development (without Electron)
-const localStorageKey = 'doogie-journal-entries';
+const STORAGE_KEY = 'doogie-journal-entries';
+const ERROR_VISIBLE_MS = 4000;
 
-function getLocalEntries(): JournalEntry[] {
+function readEntries(): JournalEntry[] {
   try {
-    const data = localStorage.getItem(localStorageKey);
+    const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       return JSON.parse(data).entries || [];
     }
@@ -24,11 +24,13 @@ function getLocalEntries(): JournalEntry[] {
   return [];
 }
 
-function saveLocalEntries(entries: JournalEntry[]): void {
+function writeEntries(entries: JournalEntry[]): boolean {
   try {
-    localStorage.setItem(localStorageKey, JSON.stringify({ entries }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ entries }));
+    return true;
   } catch (e) {
     console.error('Error saving to localStorage:', e);
+    return false;
   }
 }
 
@@ -38,30 +40,24 @@ export function useJournal() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [storageWarning, setStorageWarning] = useState<string | null>(null);
 
-  const isElectron = typeof window !== 'undefined' && window.electronAPI;
-
-  // Load entries on mount
   useEffect(() => {
-    async function loadEntries() {
-      setIsLoading(true);
-      try {
-        if (isElectron) {
-          const data = await window.electronAPI.getEntries();
-          setEntries(data.entries || []);
-        } else {
-          setEntries(getLocalEntries());
-        }
-      } catch (e) {
-        console.error('Error loading entries:', e);
-        setEntries([]);
-      }
-      setIsLoading(false);
-    }
-    loadEntries();
-  }, [isElectron]);
+    setEntries(readEntries());
+    setIsLoading(false);
+  }, []);
 
-  // Create a new entry
+  // Auto-clear the storage warning after a short interval.
+  useEffect(() => {
+    if (!storageWarning) return;
+    const t = setTimeout(() => setStorageWarning(null), ERROR_VISIBLE_MS);
+    return () => clearTimeout(t);
+  }, [storageWarning]);
+
+  const flagStorageFull = useCallback(() => {
+    setStorageWarning('WARN: STORAGE FULL');
+  }, []);
+
   const createNewEntry = useCallback(() => {
     const now = new Date();
     const newEntry: JournalEntry = {
@@ -76,7 +72,6 @@ export function useJournal() {
     return newEntry;
   }, []);
 
-  // Update the current entry content
   const updateContent = useCallback((content: string) => {
     if (currentEntry) {
       setCurrentEntry({
@@ -88,78 +83,64 @@ export function useJournal() {
     }
   }, [currentEntry]);
 
-  // Save the current entry
   const saveCurrentEntry = useCallback(async () => {
     if (!currentEntry) return false;
 
     setIsSaving(true);
     try {
-      if (isElectron) {
-        const result = await window.electronAPI.saveEntry(currentEntry);
-        if (result.success && result.entries) {
-          setEntries(result.entries);
-          setHasUnsavedChanges(false);
-          setIsSaving(false);
-          return true;
-        }
+      const existingIndex = entries.findIndex(e => e.id === currentEntry.id);
+      let newEntries: JournalEntry[];
+      if (existingIndex >= 0) {
+        newEntries = [...entries];
+        newEntries[existingIndex] = currentEntry;
       } else {
-        // Fallback to localStorage
-        const existingIndex = entries.findIndex(e => e.id === currentEntry.id);
-        let newEntries: JournalEntry[];
-        if (existingIndex >= 0) {
-          newEntries = [...entries];
-          newEntries[existingIndex] = currentEntry;
-        } else {
-          newEntries = [currentEntry, ...entries];
-        }
-        newEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        saveLocalEntries(newEntries);
-        setEntries(newEntries);
-        setHasUnsavedChanges(false);
-        setIsSaving(false);
-        return true;
+        newEntries = [currentEntry, ...entries];
       }
+      newEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const ok = writeEntries(newEntries);
+      // Even if the write fails, keep the entry in component state so the
+      // user does not lose work for the current session.
+      setEntries(newEntries);
+      if (!ok) {
+        flagStorageFull();
+        setIsSaving(false);
+        return false;
+      }
+      setHasUnsavedChanges(false);
+      setIsSaving(false);
+      return true;
     } catch (e) {
       console.error('Error saving entry:', e);
+      flagStorageFull();
+      setIsSaving(false);
+      return false;
     }
-    setIsSaving(false);
-    return false;
-  }, [currentEntry, entries, isElectron]);
+  }, [currentEntry, entries, flagStorageFull]);
 
-  // Load an existing entry
   const loadEntry = useCallback((entry: JournalEntry) => {
     setCurrentEntry(entry);
     setHasUnsavedChanges(false);
   }, []);
 
-  // Delete an entry
   const deleteEntry = useCallback(async (entryId: string) => {
     try {
-      if (isElectron) {
-        const result = await window.electronAPI.deleteEntry(entryId);
-        if (result.success && result.entries) {
-          setEntries(result.entries);
-          if (currentEntry?.id === entryId) {
-            setCurrentEntry(null);
-            setHasUnsavedChanges(false);
-          }
-          return true;
-        }
-      } else {
-        const newEntries = entries.filter(e => e.id !== entryId);
-        saveLocalEntries(newEntries);
-        setEntries(newEntries);
-        if (currentEntry?.id === entryId) {
-          setCurrentEntry(null);
-          setHasUnsavedChanges(false);
-        }
-        return true;
+      const newEntries = entries.filter(e => e.id !== entryId);
+      const ok = writeEntries(newEntries);
+      setEntries(newEntries);
+      if (!ok) {
+        flagStorageFull();
       }
+      if (currentEntry?.id === entryId) {
+        setCurrentEntry(null);
+        setHasUnsavedChanges(false);
+      }
+      return ok;
     } catch (e) {
       console.error('Error deleting entry:', e);
+      flagStorageFull();
+      return false;
     }
-    return false;
-  }, [currentEntry, entries, isElectron]);
+  }, [currentEntry, entries, flagStorageFull]);
 
   return {
     entries,
@@ -167,6 +148,7 @@ export function useJournal() {
     isLoading,
     isSaving,
     hasUnsavedChanges,
+    storageWarning,
     createNewEntry,
     updateContent,
     saveCurrentEntry,

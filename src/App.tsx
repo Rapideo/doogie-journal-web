@@ -18,6 +18,7 @@ function App() {
     isLoading,
     isSaving,
     hasUnsavedChanges,
+    storageWarning,
     createNewEntry,
     updateContent,
     saveCurrentEntry,
@@ -226,6 +227,7 @@ function App() {
         currentDate={currentEntry?.date || null}
         cursorPosition={cursorPosition}
         mode={mode}
+        warning={storageWarning}
       />
 
       {/* Dialogs */}
