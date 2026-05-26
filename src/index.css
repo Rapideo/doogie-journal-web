@@ -381,3 +381,14 @@ textarea.journal-input.caret-transparent {
     0 0 4px rgba(0, 170, 170, 0.4),
     0 0 6px rgba(0, 170, 170, 0.2);
 }
+
+@keyframes boot-cursor-blink {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.boot-cursor {
+  display: inline-block;
+  animation: boot-cursor-blink 1s steps(1) infinite;
+  margin-left: 4px;
+}

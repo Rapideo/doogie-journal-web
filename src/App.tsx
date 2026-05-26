@@ -5,11 +5,13 @@ import { Editor } from './components/Editor';
 import { EntryBrowser } from './components/EntryBrowser';
 import { HelpDialog } from './components/HelpDialog';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { BootGate } from './components/BootGate';
 import { useJournal } from './hooks/useJournal';
 import { useKeyboardSound } from './hooks/useKeyboardSound';
 
 type AppMode = 'edit' | 'browse' | 'help';
 type DialogType = 'none' | 'help' | 'browse' | 'unsaved-new' | 'unsaved-browse' | 'unsaved-quit' | 'quit' | 'reset';
+type Phase = 'boot-gate' | 'splash' | 'editor';
 
 function App() {
   const {
@@ -32,44 +34,38 @@ function App() {
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [activeDialog, setActiveDialog] = useState<DialogType>('none');
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const [showSplash, setShowSplash] = useState(true);
+  const [phase, setPhase] = useState<Phase>('boot-gate');
 
-  // Play theme when splash screen shows
+  // Play theme when splash phase begins
   useEffect(() => {
-    if (isLoading || !showSplash) return;
+    if (isLoading || phase !== 'splash') return;
 
-    // Small delay to ensure audio context is ready, then play theme
     const themeTimer = setTimeout(() => {
       playTheme();
     }, 500);
 
     return () => clearTimeout(themeTimer);
-  }, [isLoading, showSplash, playTheme]);
+  }, [isLoading, phase, playTheme]);
 
-  // Auto-open today's entry after splash screen (7 seconds)
+  // Auto-transition to editor after splash (7 seconds)
   useEffect(() => {
-    if (isLoading || !showSplash) return;
+    if (isLoading || phase !== 'splash') return;
 
     const timer = setTimeout(() => {
-      // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
-
-      // Check if an entry for today already exists
       const todayEntry = entries.find(e => e.date === today);
 
       if (todayEntry) {
-        // Load existing entry for today
         loadEntry(todayEntry);
       } else {
-        // Create a new entry for today
         createNewEntry();
       }
 
-      setShowSplash(false);
+      setPhase('editor');
     }, 7000);
 
     return () => clearTimeout(timer);
-  }, [isLoading, showSplash, entries, loadEntry, createNewEntry]);
+  }, [isLoading, phase, entries, loadEntry, createNewEntry]);
 
   // Determine app mode based on active dialog
   const mode: AppMode = activeDialog === 'browse' ? 'browse' : activeDialog === 'help' ? 'help' : 'edit';
@@ -128,6 +124,24 @@ function App() {
     playBeep();
   }, [clearAllEntries, playBeep]);
 
+  const handleBootGateAdvance = useCallback(() => {
+    // First gesture unlocks audio context for the splash theme.
+    try {
+      const Ctx = (window as unknown as { AudioContext: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
+        || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (Ctx) {
+        const ctx = new Ctx();
+        // Some browsers require an explicit resume after construction.
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
+      }
+    } catch {
+      // Audio unlock is best-effort; silent splash is acceptable degradation.
+    }
+    setPhase('splash');
+  }, []);
+
   // Dialog handlers
   const handleConfirmUnsaved = useCallback(async () => {
     // Save first, then do pending action
@@ -169,7 +183,11 @@ function App() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if we're in a dialog
+      // Only the editor phase listens for function keys.
+      if (phase !== 'editor') {
+        return;
+      }
+      // Don't intercept if we're in a dialog that captures input.
       if (activeDialog !== 'none' && activeDialog !== 'browse' && activeDialog !== 'help') {
         return;
       }
@@ -204,12 +222,29 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeDialog, handleHelp, handleSave, handleNew, handleBrowse, handleQuit, handleReset]);
+  }, [activeDialog, phase, handleHelp, handleSave, handleNew, handleBrowse, handleQuit, handleReset]);
 
   if (isLoading) {
     return (
       <div className="crt-screen crt-flicker dos-blue-bg h-screen flex items-center justify-center">
         <div className="text-white crt-glow text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (phase === 'boot-gate') {
+    return <BootGate onAdvance={handleBootGateAdvance} />;
+  }
+
+  if (phase === 'splash') {
+    return (
+      <div className="crt-screen crt-flicker dos-blue-bg h-screen flex flex-col items-center justify-center">
+        <div className="text-white crt-glow text-3xl mb-4 font-bold tracking-wider">
+          DOOGIE JOURNAL
+        </div>
+        <div className="text-cyan-300 crt-glow text-sm">
+          v1.0 &mdash; loading today's entry...
+        </div>
       </div>
     );
   }
