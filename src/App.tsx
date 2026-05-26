@@ -9,7 +9,7 @@ import { useJournal } from './hooks/useJournal';
 import { useKeyboardSound } from './hooks/useKeyboardSound';
 
 type AppMode = 'edit' | 'browse' | 'help';
-type DialogType = 'none' | 'help' | 'browse' | 'unsaved-new' | 'unsaved-browse' | 'unsaved-quit' | 'quit';
+type DialogType = 'none' | 'help' | 'browse' | 'unsaved-new' | 'unsaved-browse' | 'unsaved-quit' | 'quit' | 'reset';
 
 function App() {
   const {
@@ -24,6 +24,7 @@ function App() {
     saveCurrentEntry,
     loadEntry,
     deleteEntry,
+    clearAllEntries,
   } = useJournal();
 
   const { playBeep, playTheme } = useKeyboardSound();
@@ -117,6 +118,16 @@ function App() {
     }, 'unsaved-quit');
   }, [handleUnsavedAction]);
 
+  const handleReset = useCallback(() => {
+    setActiveDialog('reset');
+  }, []);
+
+  const handleConfirmReset = useCallback(async () => {
+    await clearAllEntries();
+    setActiveDialog('none');
+    playBeep();
+  }, [clearAllEntries, playBeep]);
+
   // Dialog handlers
   const handleConfirmUnsaved = useCallback(async () => {
     // Save first, then do pending action
@@ -174,7 +185,11 @@ function App() {
           break;
         case 'F3':
           e.preventDefault();
-          handleNew();
+          if (e.shiftKey) {
+            handleReset();
+          } else {
+            handleNew();
+          }
           break;
         case 'F4':
           e.preventDefault();
@@ -189,7 +204,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeDialog, handleHelp, handleSave, handleNew, handleBrowse, handleQuit]);
+  }, [activeDialog, handleHelp, handleSave, handleNew, handleBrowse, handleQuit, handleReset]);
 
   if (isLoading) {
     return (
@@ -258,6 +273,15 @@ function App() {
           title="Quit"
           message="Are you sure you want to quit DOOGIE JOURNAL?"
           onConfirm={handleConfirmQuit}
+          onCancel={handleCancelDialog}
+        />
+      )}
+
+      {activeDialog === 'reset' && (
+        <ConfirmDialog
+          title="Reset Journal"
+          message="This will erase all journal entries from this browser. Are you sure?"
+          onConfirm={handleConfirmReset}
           onCancel={handleCancelDialog}
         />
       )}

@@ -161,6 +161,19 @@ export function useJournal() {
     }
   }, [currentEntry, entries, flagStorageFull]);
 
+  const clearAllEntries = useCallback(async () => {
+    try {
+      const seeded = seedSampleEntry();
+      setEntries(seeded);
+      setCurrentEntry(null);
+      setHasUnsavedChanges(false);
+      return true;
+    } catch (e) {
+      console.error('Error clearing entries:', e);
+      return false;
+    }
+  }, []);
+
   return {
     entries,
     currentEntry,
@@ -173,5 +186,6 @@ export function useJournal() {
     saveCurrentEntry,
     loadEntry,
     deleteEntry,
+    clearAllEntries,
   };
 }
