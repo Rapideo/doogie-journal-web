@@ -62,6 +62,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div><span className="text-cyan-400">F3</span> - Create new entry</div>
               <div><span className="text-cyan-400">F4</span> - Browse saved entries</div>
               <div><span className="text-cyan-400">F10</span> - Quit application</div>
+              <div><span className="text-cyan-400">Shift+F3</span> - Clear all entries</div>
             </div>
 
             <div className="mt-4">
@@ -72,6 +73,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div><span className="text-cyan-400">Enter</span> - Edit selected entry</div>
               <div><span className="text-cyan-400">D</span> - Delete selected entry</div>
               <div><span className="text-cyan-400">Esc</span> - Close browser</div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-blue-400 text-xs opacity-80">
+              <span className="text-yellow-400">NOTE:</span> Your entries are stored only in this browser. Clearing your browser data will erase them.
             </div>
 
             <div className="mt-4 text-center text-xs opacity-70">
