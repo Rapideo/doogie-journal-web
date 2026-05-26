@@ -1,0 +1,383 @@
+@import "tailwindcss";
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Consolas', 'Courier New', Courier, monospace;
+  background-color: #0000AA;
+  color: #FFFFFF;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: none;
+  font-smooth: never;
+}
+
+/* DOS Blue background */
+.dos-blue-bg {
+  background-color: #0000AA;
+}
+
+/* CRT Screen Effect Container */
+.crt-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Scanlines overlay */
+.crt-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* CRT curvature and vignette effect */
+.crt-screen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 60%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  pointer-events: none;
+  z-index: 101;
+}
+
+/* Phosphor glow effect */
+.crt-glow {
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.8),
+    0 0 2px rgba(170, 255, 255, 0.4),
+    0 0 3px rgba(170, 255, 255, 0.2);
+}
+
+/* Subtle screen flicker */
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.98; }
+  15% { opacity: 0.96; }
+  20% { opacity: 0.99; }
+  25% { opacity: 0.97; }
+  30% { opacity: 0.98; }
+  35% { opacity: 0.95; }
+  40% { opacity: 0.97; }
+  45% { opacity: 0.99; }
+  50% { opacity: 0.96; }
+  55% { opacity: 0.98; }
+  60% { opacity: 0.97; }
+  65% { opacity: 0.95; }
+  70% { opacity: 0.99; }
+  75% { opacity: 0.97; }
+  80% { opacity: 0.96; }
+  85% { opacity: 0.98; }
+  90% { opacity: 0.97; }
+  95% { opacity: 0.99; }
+  100% { opacity: 0.97; }
+}
+
+.crt-flicker {
+  animation: flicker 4s infinite;
+}
+
+/* Blinking cursor */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* DOS-style selection */
+::selection {
+  background-color: #AAAAAA;
+  color: #0000AA;
+}
+
+/* Textarea styling to match DOS */
+textarea.dos-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: #FFFFFF;
+  font-family: 'Consolas', 'Courier New', Courier, monospace;
+  font-size: 18px;
+  line-height: 1.4;
+  caret-color: #FFFFFF;
+  width: 100%;
+  height: 100%;
+}
+
+textarea.dos-input::placeholder {
+  color: #555599;
+}
+
+/* Custom scrollbar - minimal DOS style */
+::-webkit-scrollbar {
+  width: 16px;
+  background-color: #0000AA;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #000055;
+  border: 1px solid #0000AA;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #5555FF;
+  border: 1px solid #0000AA;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #7777FF;
+}
+
+/* Menu bar styling */
+.menu-bar {
+  background-color: #AAAAAA;
+  color: #000000;
+  padding: 2px 0;
+  font-size: 14px;
+  user-select: none;
+}
+
+.menu-item {
+  display: inline-block;
+  padding: 2px 12px;
+  cursor: pointer;
+  transition: none;
+}
+
+.menu-item:hover {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+.menu-item .hotkey {
+  color: #AA0000;
+  font-weight: bold;
+}
+
+.menu-item:hover .hotkey {
+  color: #FF5555;
+}
+
+/* Status bar styling */
+.status-bar {
+  background-color: #AAAAAA;
+  color: #000000;
+  padding: 2px 8px;
+  font-size: 14px;
+  user-select: none;
+}
+
+/* Entry list styling */
+.entry-list-item {
+  padding: 4px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #000055;
+}
+
+.entry-list-item:hover {
+  background-color: #0000CC;
+}
+
+.entry-list-item.selected {
+  background-color: #5555FF;
+}
+
+/* Modal/Dialog DOS style */
+.dos-dialog {
+  background-color: #AAAAAA;
+  border: 2px solid #FFFFFF;
+  box-shadow: 4px 4px 0 #000000;
+  color: #000000;
+}
+
+.dos-dialog-title {
+  background-color: #0000AA;
+  color: #FFFFFF;
+  padding: 4px 8px;
+  font-weight: bold;
+}
+
+.dos-button {
+  background-color: #AAAAAA;
+  border: 2px outset #FFFFFF;
+  color: #000000;
+  padding: 4px 16px;
+  cursor: pointer;
+  font-family: 'Consolas', 'Courier New', Courier, monospace;
+  font-size: 14px;
+}
+
+.dos-button:hover {
+  background-color: #CCCCCC;
+}
+
+.dos-button:active {
+  border-style: inset;
+}
+
+.dos-button .hotkey {
+  text-decoration: underline;
+  color: #AA0000;
+}
+
+/* ============================================
+   DOOGIE HOWSER JOURNAL STYLES
+   ============================================ */
+
+/* Teal/Cyan color for journal text */
+.journal-text {
+  color: #00AAAA;
+}
+
+/* Journal Header Bar Container */
+.journal-header-container {
+  padding: 20px 40px 10px 40px;
+  display: flex;
+  justify-content: center;
+}
+
+/* The teal header bar with lines */
+.journal-header {
+  display: flex;
+  align-items: center;
+  background-color: #00AAAA;
+  padding: 6px 20px;
+  position: relative;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Double line effect through the header */
+.journal-header-line {
+  flex: 1;
+  height: 4px;
+  min-width: 30px;
+  position: relative;
+  background: transparent;
+}
+
+.journal-header-line::before,
+.journal-header-line::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #006666;
+}
+
+.journal-header-line::before {
+  top: 0;
+}
+
+.journal-header-line::after {
+  bottom: 0;
+}
+
+/* Header text */
+.journal-header-text {
+  color: #003333;
+  font-family: 'Consolas', 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  padding: 0 15px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Journal content area */
+.journal-content {
+  position: relative;
+  width: 100%;
+}
+
+/* Date prefix styling - positioned absolutely to overlay the textarea indent */
+.journal-date {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #00AAAA;
+  font-family: 'Consolas', 'Courier New', Courier, monospace;
+  font-size: 18px;
+  line-height: 2.2;
+  white-space: nowrap;
+  text-shadow:
+    0 0 2px rgba(0, 170, 170, 0.8),
+    0 0 4px rgba(0, 170, 170, 0.4);
+  pointer-events: none;
+  z-index: 1;
+}
+
+
+/* Journal textarea - cyan text, double spaced */
+textarea.journal-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: #00AAAA;
+  font-family: 'Consolas', 'Courier New', Courier, monospace;
+  font-size: 18px;
+  line-height: 2.2;
+  caret-color: #00AAAA;
+  width: 100%;
+  min-height: 400px;
+  text-shadow:
+    0 0 2px rgba(0, 170, 170, 0.8),
+    0 0 4px rgba(0, 170, 170, 0.4);
+  /* text-indent is set dynamically via inline style based on date length */
+}
+
+textarea.journal-input::placeholder {
+  color: #005555;
+  text-shadow: none;
+}
+
+textarea.journal-input.caret-transparent {
+  caret-color: transparent;
+}
+
+/* Override glow for cyan text */
+.journal-text.crt-glow,
+.journal-input.crt-glow {
+  text-shadow:
+    0 0 2px rgba(0, 170, 170, 0.8),
+    0 0 4px rgba(0, 170, 170, 0.4),
+    0 0 6px rgba(0, 170, 170, 0.2);
+}
